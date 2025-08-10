@@ -1,13 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_practice/providers/folder_lock_provider.dart';
 import 'package:flutter_practice/providers/folder_provider.dart';
 import 'package:flutter_practice/screen/home_screen.dart';
+
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
 
-void main() {
+import 'models/folder_model.dart';
+
+void main() async {
+
+  WidgetsFlutterBinding.ensureInitialized();
+
+  await Hive.initFlutter();
+  Hive.registerAdapter(FolderModelAdapter());
+
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (context) => FolderProvider(),),
+        ChangeNotifierProvider(create: (context) => FolderLockProvider(),),
       ],
       child: MyApp(),
     ),

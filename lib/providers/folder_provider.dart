@@ -1,51 +1,67 @@
 
-import 'package:flutter/cupertino.dart';
-import 'package:flutter_practice/models/folder_model.dart';
+import 'package:flutter/foundation.dart';
+import 'package:hive/hive.dart';
+import '../models/folder_model.dart';
 
 class FolderProvider with ChangeNotifier {
-
-  final List<FolderModel> _folders = [
-    FolderModel(
-      id: '1',
-      name: 'Sports',
-      images: [
-        'https://picsum.photos/200/300',
-        'https://picsum.photos/200/301',
-        'https://picsum.photos/200/301',
-      ],
-    ),
-    FolderModel(
-      id: '2',
-      name: 'Music',
-      images: [
-        'https://picsum.photos/200/300',
-      ],
-    ),
-    FolderModel(
-      id: '3',
-      name: 'Travel',
-      images: [],
-    ),
-  ];
+  List<FolderModel> _folders = [];
+  final String _boxName = 'foldersBox';
 
   List<FolderModel> get folders => _folders;
+
+  Future<void> loadFolders() async {
+    final box = await Hive.openBox<FolderModel>(_boxName);
+    _folders = box.values.toList();
+    notifyListeners();
+  }
 
   FolderModel getFolderById(String id) {
     return _folders.firstWhere((folder) => folder.id == id);
   }
 
-  void addFolder(String name) {
-    _folders.add(FolderModel(
+  Future<void> addFolder(String name) async {
+    final box = await Hive.openBox<FolderModel>(_boxName);
+    final newFolder = FolderModel(
       id: DateTime.now().toString(),
-      name: name, 
+      name: name,
       images: [],
-    ));
+    );
+    await box.put(newFolder.id, newFolder);
+    _folders = box.values.toList();
     notifyListeners();
   }
 
-  void addImageToFolder(String folderId, String imageUrl) {
+  Future<void> addImageToFolder(String folderId, String imagePath) async {
+    final box = await Hive.openBox<FolderModel>(_boxName);
     final folder = getFolderById(folderId);
-    folder.images.add(imageUrl);
+    folder.images.add(imagePath);
+    await box.put(folder.id, folder);
+    _folders = box.values.toList();
+    notifyListeners();
+  }
+
+  Future<void> deleteFolder(String folderId) async {
+    final box = await Hive.openBox<FolderModel>(_boxName);
+    await box.delete(folderId);
+    _folders = box.values.toList();
+    notifyListeners();
+  }
+
+  Future<void> deleteImageFromFolder(String folderId, String imagePath) async {
+    final box = await Hive.openBox<FolderModel>(_boxName);
+    final folder = getFolderById(folderId);
+    folder.images.remove(imagePath);
+    await box.put(folder.id, folder);
+    _folders = box.values.toList();
+    notifyListeners();
+  }
+
+  Future<void> renameFolder(String folderId, String newName) async {
+    final box = await Hive.openBox<FolderModel>(_boxName);
+    final folder = getFolderById(folderId);
+    folder.name = newName;
+    await box.put(folder.id, folder);
+    _folders = box.values.toList();
     notifyListeners();
   }
 
